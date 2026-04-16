@@ -1,0 +1,20 @@
+=== 🚀 CARA INSTALASI BILLAHI ROBBY CLI ===
+
+Halo! Terima kasih sudah menggunakan Bill (Bassist CLI).
+Ikuti langkah simpel ini biar Bill bisa dipanggil dari mana saja:
+
+1. Buka file "Billasis.exe" atau "bill.exe" (klik 2x).
+2. Nanti akan muncul robot lucu, langsung ketik saja: install
+3. Tunggu sampai muncul tulisan "INSTALASI BERHASIL".
+4. Klik Enter untuk keluar.
+5. Tutup semua jendela CMD / PowerShell / Terminal yang lagi buka.
+6. Buka Terminal baru, ketik: bill
+7. SELESAI! Bill siap menemani harimu. 🤖✨
+
+--- 🛡️ CATATAN KEAMANAN ---
+Tenang saja, aplikasi ini AMAN 100%. 
+Kalau antivirus kamu cerewet, itu karena aplikasi ini dibuat pakai bahasa Go (False Positive).
+Kalau kamu mau cek kodenya sendiri biar lebih percaya, silakan mampir ke sini:
+🔗 https://github.com/Billy-dev12/Golang-CLI
+
+Selamat berkarya! 🚀
