@@ -36,6 +36,6 @@ func PrintHelp() {
 	fmt.Println("  bill exit / keluar       -> Keluar dari mode interaktif")
 
 	fmt.Println("\n" + strings.Repeat("-", 50))
-	fmt.Printf("%s✨ Gunakan bill tanpa argumen untuk masuk ke Mode Interaktif%s\n", green, reset)
-	fmt.Printf("%s🌐 Info & Update: https://github.com/Billy-dev12%s\n\n", cyan, reset)
+	fmt.Printf("%s✨ Bill CLI %s %s| Gunakan tanpa argumen untuk Mode Interaktif\n", green, version.Version, reset)
+	fmt.Printf("%s🌐 Info & Update: https://github.com/Billy-dev12/Go_clI%s\n\n", cyan, reset)
 }
