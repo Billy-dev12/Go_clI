@@ -53,6 +53,12 @@ fi
 # Create install directory if it doesn't exist
 mkdir -p "$INSTALL_DIR"
 
+# Explicitly remove old binary to ensure fresh download
+if [ -f "$INSTALL_DIR/$BINARY_NAME" ]; then
+    echo "🧹 Removing old binary..."
+    rm -f "$INSTALL_DIR/$BINARY_NAME"
+fi
+
 echo "📥 Downloading binary..."
 curl -L -o "$INSTALL_DIR/$BINARY_NAME" "$DOWNLOAD_URL"
 
