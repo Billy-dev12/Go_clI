@@ -40,8 +40,13 @@ if (Test-Path $targetPath) {
     Remove-Item $targetPath -Force
 }
 
-Write-Host "📥 Downloading binary..." -ForegroundColor Cyan
-Invoke-WebRequest -Uri $downloadUrl -OutFile $targetPath
+if (-not $downloadUrl) {
+    Write-Host "❌ Download URL is empty." -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "📥 Downloading binary from: $latestVersion" -ForegroundColor Cyan
+Invoke-WebRequest -Uri "$downloadUrl" -OutFile "$targetPath"
 
 Write-Host "⚙️  Updating PATH environment variable..." -ForegroundColor Cyan
 

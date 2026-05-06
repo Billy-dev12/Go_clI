@@ -21,7 +21,7 @@ curl -fsSL https://raw.githubusercontent.com/Billy-dev12/Go_clI/main/install.sh 
 ### 🪟 Windows (PowerShell)
 Buka PowerShell dan jalankan:
 ```powershell
-irm https://raw.githubusercontent.com/Billy-dev12/Go_clI/main/install.ps1 | iex
+irm 'https://raw.githubusercontent.com/Billy-dev12/Go_clI/main/install.ps1' | iex
 ```
 
 ## 🛡️ Keamanan & Transparansi
