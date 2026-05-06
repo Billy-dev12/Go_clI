@@ -31,6 +31,7 @@ Write-Host "📦 Latest version: $latestVersion" -ForegroundColor Green
 $arch = "amd64" # Default for most Windows users
 if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { $arch = "arm64" }
 
+$downloadUrl = "https://github.com/$REPO/releases/download/$latestVersion/bill-windows-$arch.exe"
 $targetPath = Join-Path $INSTALL_DIR $BINARY_NAME
 
 # Remove old binary if it exists
