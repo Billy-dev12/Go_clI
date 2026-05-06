@@ -127,7 +127,7 @@ func fixWindows(missing []string) {
 		case "mysql": id = "Oracle.MySQL"
 		}
 		
-		cmd := exec.Command("winget", "install", id, "--silent")
+		cmd := exec.Command("winget", "install", id, "--silent", "--accept-package-agreements", "--accept-source-agreements")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Run()
