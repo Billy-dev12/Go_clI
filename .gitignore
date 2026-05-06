@@ -1,0 +1,43 @@
+# Binaries
+bin/
+app_build/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bill
+app
+
+# Go related
+vendor/
+go.sum
+*.test
+*.out
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Laravel trash (if project is here)
+storage/*.key
+/public/storage
+/public/hot
+/public/mix-manifest.json
+/node_modules
+/vendor
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+auth.json

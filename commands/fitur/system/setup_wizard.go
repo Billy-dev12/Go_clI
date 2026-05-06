@@ -69,6 +69,7 @@ func ShowWelcomeInInteractiveMode(callback func([]string)) {
 	}
 
 	PrintHelpBox()
+	fmt.Println("\n🩺 Tip: Ketik 'info' untuk mengecek kesehatan lingkungan (PHP, Git, dll).")
 
 	fmt.Println("\n💡 Ketik perintah (Contoh: 'help' atau 'exit' untuk keluar).")
 

@@ -108,7 +108,7 @@ func prosesPerintah(args []string) {
 		build.InteractiveBuild(name)
 
 	case "info":
-		build.ShowCurrentEnv()
+		system.CheckEverything()
 
 	default:
 		fmt.Printf("    ❌ Perintah '%s' tidak dikenali.\n", subCommand)
