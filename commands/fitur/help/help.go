@@ -18,6 +18,7 @@ func PrintHelp() {
 
 	fmt.Printf("\n%s🐙 GITHUB & GIT%s\n", yellow, reset)
 	fmt.Println("  bill push                -> Smart push (auto init/commit/sync)")
+	fmt.Println("  bill branch              -> Manage git branches (list/switch)")
 	fmt.Println("  bill arch push           -> Smart push (khusus pengguna Arch)")
 	fmt.Println("  bill push delete         -> Reset konfigurasi Git (.git)")
 

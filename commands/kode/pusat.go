@@ -73,6 +73,9 @@ func prosesPerintah(args []string) {
 	case "push":
 		github.PushToGithub(args[1:])
 
+	case "branch":
+		github.HandleBranch(args[1:])
+
 	case "arch":
 		if len(args) < 2 || args[1] != "push" {
 			fmt.Println("    ❌ Format salah. Gunakan: bill arch push [pesan]")

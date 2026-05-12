@@ -10,6 +10,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -227,7 +229,35 @@ func PushToGithub(args []string) {
 		runGitCommand("git", "config", "--global", "credential.helper", "store")
 	}
 
-	// 4. Staging Check & Auto-commit
+	// 4. Version Check & Auto-increment
+	versionFile, currentVer := findVersionFile()
+	if versionFile != "" {
+		fmt.Printf("📦 Versi saat ini: %s\n", currentVer)
+		nextVer := incrementVersion(currentVer)
+		ans := system.ReadInput(fmt.Sprintf("📝 Mau update versi ke %s? [Enter=Ya / ketik versi baru / 'n'=Skip]: ", nextVer))
+
+		targetVer := ""
+		if ans == "" {
+			targetVer = nextVer
+		} else if strings.ToLower(ans) != "n" {
+			targetVer = ans
+		}
+
+		if targetVer != "" {
+			err := updateVersionInFile(versionFile, targetVer)
+			if err != nil {
+				fmt.Printf("❌ Gagal update versi: %v\n", err)
+			} else {
+				fmt.Printf("✅ Versi diupdate ke %s\n", targetVer)
+				runGitCommand("git", "add", versionFile)
+				// Commit ini akan digabung nanti atau dibuat terpisah
+				// Biar simpel, kita commit sekarang
+				runGitCommand("git", "commit", "-m", fmt.Sprintf("chore: bump version to %s", targetVer))
+			}
+		}
+	}
+
+	// 5. Staging Check & Auto-commit
 	status, _ := exec.Command("git", "status", "--short").Output()
 	if len(status) > 0 {
 		fmt.Println("📝 Terdeteksi perubahan yang belum di-commit.")
@@ -246,7 +276,7 @@ func PushToGithub(args []string) {
 		runGitCommand("git", "commit", "-m", message)
 	}
 
-	// 5. Final Push
+	// 6. Final Push
 	fmt.Printf("🚀 Pushing to GitHub (%s branch %s)...\n", remoteURL, currentBranch)
 	output, err := runGitCombinedOutput("git", "push", "origin", currentBranch)
 
@@ -317,4 +347,56 @@ func runGitCombinedOutput(name string, arg ...string) (string, error) {
 	output, err := cmd.CombinedOutput()
 	fmt.Print(string(output)) // Tetap tampilkan output ke user
 	return string(output), err
+}
+
+// --- Versioning Helpers ---
+
+func findVersionFile() (string, string) {
+	// 1. Cek commands/fitur/version/version.go (untuk Bill CLI sendiri)
+	billVerPath := "commands/fitur/version/version.go"
+	if content, err := os.ReadFile(billVerPath); err == nil {
+		re := regexp.MustCompile(`Version = "v?(\d+\.\d+\.\d+)"`)
+		match := re.FindStringSubmatch(string(content))
+		if len(match) > 1 {
+			return billVerPath, match[1]
+		}
+	}
+
+	// 2. Cek file VERSION di root
+	if content, err := os.ReadFile("VERSION"); err == nil {
+		return "VERSION", strings.TrimSpace(string(content))
+	}
+
+	return "", ""
+}
+
+func incrementVersion(v string) string {
+	re := regexp.MustCompile(`(\d+)\.(\d+)\.(\d+)`)
+	match := re.FindStringSubmatch(v)
+	if len(match) < 4 {
+		return v
+	}
+
+	major, _ := strconv.Atoi(match[1])
+	minor, _ := strconv.Atoi(match[2])
+	patch, _ := strconv.Atoi(match[3])
+
+	return fmt.Sprintf("%d.%d.%d", major, minor, patch+1)
+}
+
+func updateVersionInFile(path string, newVer string) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	var newContent string
+	if strings.HasSuffix(path, ".go") {
+		re := regexp.MustCompile(`Version = "v?(\d+\.\d+\.\d+)"`)
+		newContent = re.ReplaceAllString(string(content), fmt.Sprintf(`Version = "%s"`, newVer))
+	} else {
+		newContent = newVer
+	}
+
+	return os.WriteFile(path, []byte(newContent), 0644)
 }
