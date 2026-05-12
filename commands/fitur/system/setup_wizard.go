@@ -12,6 +12,16 @@ import (
 	"strings"
 )
 
+// ReadInput membaca input dari user sampai menekan enter (mendukung spasi)
+func ReadInput(prompt string) string {
+	fmt.Print(prompt)
+	scanner := bufio.NewScanner(os.Stdin)
+	if scanner.Scan() {
+		return strings.TrimSpace(scanner.Text())
+	}
+	return ""
+}
+
 // ======================================
 //        🎨 ASCII ART & BANNER
 // ======================================

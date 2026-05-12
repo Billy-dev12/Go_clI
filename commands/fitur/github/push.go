@@ -1,7 +1,7 @@
 package github
 
 import (
-	"bufio"
+	"bill/commands/fitur/system"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -57,9 +57,7 @@ func setupGithubToken() string {
 	fmt.Println("5. Klik 'Generate token' di bawah")
 	fmt.Println("6. Copy token-nya dan paste di sini.")
 
-	fmt.Print("\nInput GitHub Token: ")
-	var token string
-	fmt.Scanln(&token)
+	token := system.ReadInput("\nInput GitHub Token: ")
 	token = strings.TrimSpace(token)
 
 	if token != "" {
@@ -111,9 +109,7 @@ func PushToGithub(args []string) {
 
 	// 0. Cek argumen 'delete' untuk reset Git
 	if len(args) > 0 && args[0] == "delete" {
-		fmt.Print("⚠️  Kamu yakin ingin menghapus folder .git? Ini akan mereset konfigurasi Git di folder ini. (y/n): ")
-		var confirm string
-		fmt.Scanln(&confirm)
+		confirm := system.ReadInput("⚠️  Kamu yakin ingin menghapus folder .git? Ini akan mereset konfigurasi Git di folder ini. (y/n): ")
 		if confirm == "y" || confirm == "Y" {
 			err := os.RemoveAll(".git")
 			if err != nil {
@@ -145,19 +141,12 @@ func PushToGithub(args []string) {
 		// Ambil nama folder sebagai default nama repo
 		dir, _ := os.Getwd()
 		defaultRepoName := filepath.Base(dir)
-		fmt.Printf("📦 Nama repositori (default: %s): ", defaultRepoName)
-		var repoName string
-		fmt.Scanln(&repoName)
+		repoName := system.ReadInput(fmt.Sprintf("📦 Nama repositori (default: %s): ", defaultRepoName))
 		if repoName == "" {
 			repoName = defaultRepoName
 		}
 
-		fmt.Printf("📝 Deskripsi repositori (default: %s): ", repoName)
-		var repoDesc string
-		bufioScanner := bufio.NewScanner(os.Stdin)
-		if bufioScanner.Scan() {
-			repoDesc = strings.TrimSpace(bufioScanner.Text())
-		}
+		repoDesc := system.ReadInput(fmt.Sprintf("📝 Deskripsi repositori (default: %s): ", repoName))
 		if repoDesc == "" {
 			repoDesc = repoName
 		}
@@ -172,9 +161,7 @@ func PushToGithub(args []string) {
 
 			if err.Error() == "nama_digunakan" {
 				fmt.Printf("❌ Nama '%s' sudah digunakan di GitHub kamu.\n", repoName)
-				fmt.Print("📝 Masukkan nama lain: ")
-				var newName string
-				fmt.Scanln(&newName)
+				newName := system.ReadInput("📝 Masukkan nama lain: ")
 				repoName = strings.TrimSpace(newName)
 				if repoName == "" {
 					fmt.Println("❌ Error: Nama tidak boleh kosong.")
@@ -186,9 +173,7 @@ func PushToGithub(args []string) {
 			}
 		}
 
-		fmt.Print("📝 Masukkan Pesan Commit awal (default: Initial commit): ")
-		var commitMsg string
-		fmt.Scanln(&commitMsg)
+		commitMsg := system.ReadInput("📝 Masukkan Pesan Commit awal (default: Initial commit): ")
 		if commitMsg == "" {
 			commitMsg = "Initial commit"
 		}
@@ -248,11 +233,9 @@ func PushToGithub(args []string) {
 		fmt.Println("📝 Terdeteksi perubahan yang belum di-commit.")
 		message := "Auto push from Bill"
 		if len(args) > 0 {
-			message = args[0]
+			message = strings.Join(args, " ")
 		} else {
-			fmt.Printf("Masukkan pesan commit (default: %s): ", message)
-			var inputMsg string
-			fmt.Scanln(&inputMsg)
+			inputMsg := system.ReadInput(fmt.Sprintf("Masukkan pesan commit (default: %s): ", message))
 			if inputMsg != "" {
 				message = inputMsg
 			}
@@ -271,9 +254,7 @@ func PushToGithub(args []string) {
 		// Cek apakah error karena push rejected (perlu pull)
 		if strings.Contains(output, "rejected") || strings.Contains(output, "non-fast-forward") {
 			fmt.Println("\n⚠️  Push ditolak karena ada perubahan di GitHub yang belum kamu ambil (pull).")
-			fmt.Print("🤔 Mau Bill bantu lakukan pull & push ulang? (y/n): ")
-			var answer string
-			fmt.Scanln(&answer)
+			answer := system.ReadInput("🤔 Mau Bill bantu lakukan pull & push ulang? (y/n): ")
 			if answer == "y" || answer == "Y" {
 				fmt.Println("⬇️  Sedang mengambil perubahan (pull)...")
 				_, pullErr := runGitCombinedOutput("git", "pull", "origin", currentBranch)
@@ -305,9 +286,7 @@ func ensureGitConfig() {
 	emailRaw, _ := exec.Command("git", "config", "user.email").Output()
 	email := strings.TrimSpace(string(emailRaw))
 	if email == "" {
-		fmt.Print("📧 GitHub Email belum diatur. Masukkan email GitHub kamu: ")
-		var inputEmail string
-		fmt.Scanln(&inputEmail)
+		inputEmail := system.ReadInput("📧 GitHub Email belum diatur. Masukkan email GitHub kamu: ")
 		if inputEmail != "" {
 			runGitCommand("git", "config", "--global", "user.email", inputEmail)
 			fmt.Println("✅ Email berhasil disimpan!")
@@ -318,9 +297,7 @@ func ensureGitConfig() {
 	nameRaw, _ := exec.Command("git", "config", "user.name").Output()
 	name := strings.TrimSpace(string(nameRaw))
 	if name == "" {
-		fmt.Print("👤 GitHub Username belum diatur. Masukkan username GitHub kamu: ")
-		var inputName string
-		fmt.Scanln(&inputName)
+		inputName := system.ReadInput("👤 GitHub Username belum diatur. Masukkan username GitHub kamu: ")
 		if inputName != "" {
 			runGitCommand("git", "config", "--global", "user.name", inputName)
 			fmt.Println("✅ Username berhasil disimpan!")
