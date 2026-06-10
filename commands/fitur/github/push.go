@@ -221,6 +221,18 @@ func PushToGithub(args []string) {
 		return
 	}
 
+	cfg := loadConfig()
+	if cfg.GithubToken != "" {
+		owner, repo, err := parseGitRemote(remoteURL)
+		if err == nil {
+			newRemoteURL := fmt.Sprintf("https://%s@github.com/%s/%s.git", cfg.GithubToken, owner, repo)
+			if remoteURL != newRemoteURL {
+				exec.Command("git", "remote", "set-url", "origin", newRemoteURL).Run()
+				remoteURL = newRemoteURL
+			}
+		}
+	}
+
 	branchRaw, _ := exec.Command("git", "branch", "--show-current").Output()
 	currentBranch := strings.TrimSpace(string(branchRaw))
 	if currentBranch == "" {
