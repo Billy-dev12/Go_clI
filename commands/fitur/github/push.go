@@ -106,6 +106,12 @@ func createGithubRepo(token string, repoName string, description string) (string
 }
 
 func PushToGithub(args []string) {
+	// 0. Cek argumen 'release' untuk membuat release & tag
+	if len(args) > 0 && args[0] == "release" {
+		handleRelease(args[1:])
+		return
+	}
+
 	// Pastikan konfigurasi Git (email & username) sudah ada
 	ensureGitConfig()
 
@@ -287,7 +293,7 @@ func PushToGithub(args []string) {
 			answer := system.ReadInput("🤔 Mau Bill bantu lakukan pull & push ulang? (y/n): ")
 			if answer == "y" || answer == "Y" {
 				fmt.Println("⬇️  Sedang mengambil perubahan (pull)...")
-				_, pullErr := runGitCombinedOutput("git", "pull", "origin", currentBranch)
+				_, pullErr := runGitCombinedOutput("git", "pull", "--no-rebase", "origin", currentBranch)
 				if pullErr != nil {
 					fmt.Println("❌ Gagal melakukan pull. Mungkin ada konflik file yang harus diperbaiki manual.")
 					return
@@ -399,4 +405,192 @@ func updateVersionInFile(path string, newVer string) error {
 	}
 
 	return os.WriteFile(path, []byte(newContent), 0644)
+}
+
+func parseGitRemote(remoteURL string) (string, string, error) {
+	remoteURL = strings.TrimSpace(remoteURL)
+	if remoteURL == "" {
+		return "", "", fmt.Errorf("remote URL kosong")
+	}
+
+	var path string
+	if strings.HasPrefix(remoteURL, "git@github.com:") {
+		path = strings.TrimPrefix(remoteURL, "git@github.com:")
+	} else if strings.Contains(remoteURL, "@github.com/") {
+		parts := strings.SplitN(remoteURL, "@github.com/", 2)
+		path = parts[1]
+	} else if strings.HasPrefix(remoteURL, "https://github.com/") {
+		path = strings.TrimPrefix(remoteURL, "https://github.com/")
+	} else if strings.HasPrefix(remoteURL, "http://github.com/") {
+		path = strings.TrimPrefix(remoteURL, "http://github.com/")
+	} else {
+		if idx := strings.Index(remoteURL, "github.com/"); idx != -1 {
+			path = remoteURL[idx+len("github.com/"):]
+		} else if idx := strings.Index(remoteURL, "github.com:"); idx != -1 {
+			path = remoteURL[idx+len("github.com:"):]
+		} else {
+			return "", "", fmt.Errorf("bukan repositori github: %s", remoteURL)
+		}
+	}
+
+	path = strings.TrimSuffix(path, ".git")
+
+	parts := strings.Split(path, "/")
+	if len(parts) < 2 {
+		return "", "", fmt.Errorf("format URL remote tidak valid: %s", remoteURL)
+	}
+
+	owner := parts[0]
+	repo := parts[1]
+
+	return owner, repo, nil
+}
+
+func createGithubRelease(token, owner, repo, tag, title, body string) error {
+	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", owner, repo)
+	data := map[string]interface{}{
+		"tag_name":               tag,
+		"name":                   title,
+		"body":                   body,
+		"draft":                  false,
+		"prerelease":             false,
+		"generate_release_notes": true,
+	}
+	jsonData, _ := json.Marshal(data)
+
+	req, _ := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
+	req.Header.Set("Authorization", "token "+token)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 201 {
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("Gagal (HTTP %d): %s", resp.StatusCode, string(respBody))
+	}
+	return nil
+}
+
+func handleRelease(args []string) {
+	ensureGitConfig()
+
+	if _, err := os.Stat(".git"); os.IsNotExist(err) {
+		fmt.Println("❌ Error: Repositori Git belum diinisialisasi. Jalankan 'bill push' biasa dulu untuk inisialisasi.")
+		return
+	}
+
+	remoteURLRaw, _ := exec.Command("git", "remote", "get-url", "origin").Output()
+	remoteURL := strings.TrimSpace(string(remoteURLRaw))
+	if remoteURL == "" {
+		fmt.Println("❌ Error: Remote 'origin' tidak ditemukan. Tambahkan remote dulu dengan: git remote add origin [link]")
+		return
+	}
+
+	owner, repo, err := parseGitRemote(remoteURL)
+	if err != nil {
+		fmt.Printf("❌ Gagal mengurai remote URL: %v\n", err)
+		return
+	}
+
+	branchRaw, _ := exec.Command("git", "branch", "--show-current").Output()
+	currentBranch := strings.TrimSpace(string(branchRaw))
+	if currentBranch == "" {
+		currentBranch = "main"
+	}
+
+	// Cek apakah ada uncommitted changes
+	status, _ := exec.Command("git", "status", "--short").Output()
+	if len(status) > 0 {
+		fmt.Println("📝 Terdeteksi perubahan yang belum di-commit.")
+		answer := system.ReadInput("🤔 Ingin membuat commit dan push perubahan saat ini terlebih dahulu? (y/n): ")
+		if answer == "y" || answer == "Y" {
+			message := "Release preparation"
+			inputMsg := system.ReadInput(fmt.Sprintf("Masukkan pesan commit (default: %s): ", message))
+			if inputMsg != "" {
+				message = inputMsg
+			}
+
+			fmt.Println("📦 Menambahkan file dan membuat commit...")
+			runGitCommand("git", "add", ".")
+			runGitCommand("git", "commit", "-m", message)
+
+			fmt.Printf("🚀 Pushing to GitHub (branch %s)...\n", currentBranch)
+			_, errPush := runGitCombinedOutput("git", "push", "origin", currentBranch)
+			if errPush != nil {
+				fmt.Printf("❌ Gagal push ke GitHub sebelum release: %v\n", errPush)
+				return
+			}
+		} else {
+			fmt.Println("⚠️  Melanjutkan pembuatan release tanpa meng-commit perubahan saat ini.")
+		}
+	} else {
+		fmt.Printf("🚀 Memastikan branch %s sinkron dengan GitHub...\n", currentBranch)
+		runGitCombinedOutput("git", "push", "origin", currentBranch)
+	}
+
+	// Tentukan tag name
+	var tagName string
+	if len(args) > 0 {
+		tagName = args[0]
+	} else {
+		tagName = system.ReadInput("🏷️  Masukkan nama tag baru (contoh: v1.0.0): ")
+		tagName = strings.TrimSpace(tagName)
+	}
+
+	if tagName == "" {
+		fmt.Println("❌ Error: Nama tag tidak boleh kosong.")
+		return
+	}
+
+	// Tentukan release/tag message
+	releaseDesc := system.ReadInput("📝 Masukkan deskripsi release (tekan Enter untuk default): ")
+	releaseDesc = strings.TrimSpace(releaseDesc)
+	if releaseDesc == "" {
+		releaseDesc = fmt.Sprintf("Release %s", tagName)
+	}
+
+	// Buat tag lokal
+	fmt.Printf("🏷️  Membuat tag lokal '%s'...\n", tagName)
+	tagErr := runGitCommand("git", "tag", "-a", tagName, "-m", releaseDesc)
+	if tagErr != nil {
+		fmt.Printf("❌ Gagal membuat tag lokal: %v\n", tagErr)
+		return
+	}
+
+	// Push tag ke remote
+	fmt.Printf("⬆️  Pushing tag '%s' ke origin...\n", tagName)
+	_, pushTagErr := runGitCombinedOutput("git", "push", "origin", tagName)
+	if pushTagErr != nil {
+		fmt.Printf("❌ Gagal push tag ke GitHub: %v\n", pushTagErr)
+		// Bersihkan tag lokal jika gagal push
+		runGitCommand("git", "tag", "-d", tagName)
+		return
+	}
+
+	fmt.Printf("✅ Tag '%s' berhasil di-push ke GitHub!\n", tagName)
+
+	// Buat GitHub Release jika ada token
+	cfg := loadConfig()
+	token := cfg.GithubToken
+	if token == "" {
+		fmt.Println("🔑 Token GitHub tidak ditemukan. Lewati pembuatan GitHub Release.")
+		fmt.Println("💡 Kamu bisa jalankan setup token nanti untuk otomatis membuat release di halaman GitHub.")
+		return
+	}
+
+	fmt.Println("🌐 Membuat GitHub Release resmi di halaman GitHub...")
+	releaseErr := createGithubRelease(token, owner, repo, tagName, tagName, releaseDesc)
+	if releaseErr != nil {
+		fmt.Printf("⚠️  Gagal membuat GitHub Release via API: %v\n", releaseErr)
+		fmt.Println("Tetapi git tag sudah berhasil di-push.")
+	} else {
+		releaseURL := fmt.Sprintf("https://github.com/%s/%s/releases/tag/%s", owner, repo, tagName)
+		fmt.Println("🎉 GitHub Release resmi berhasil dibuat!")
+		fmt.Printf("🔗 Link Release: %s\n", releaseURL)
+	}
 }

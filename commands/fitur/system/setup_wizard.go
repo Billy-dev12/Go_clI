@@ -42,11 +42,12 @@ func printLoading(text string) {
 
 func PrintHelpBox() {
 	fmt.Println("\n📖 DAFTAR PERINTAH:")
-	fmt.Println("  bill buat laravel [nama]  -> Buat project Laravel")
-	fmt.Println("  bill push                 -> Push ke GitHub")
-	fmt.Println("  bill build                -> Build project")
-	fmt.Println("  bill help                 -> Menu bantuan")
-	fmt.Println("  bill install              -> Pasang ke sistem")
+	fmt.Println("  bill buat laravel [nama]   -> Buat project Laravel")
+	fmt.Println("  bill push                  -> Push ke GitHub")
+	fmt.Println("  bill push release [tag]    -> Buat git tag & GitHub Release")
+	fmt.Println("  bill build                 -> Build project")
+	fmt.Println("  bill help                  -> Menu bantuan")
+	fmt.Println("  bill install               -> Pasang ke sistem")
 	fmt.Println("\n🌐 Info: https://github.com/Billy-dev12")
 }
 
